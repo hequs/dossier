@@ -4,18 +4,18 @@ from collections import defaultdict
 from enum import Enum
 
 
-class BaseOT(int, Enum):
-    def __str__(self):
-        return 'OT_' + self.name
-
-
 class BaseCT(int, Enum):
-    def __str__(self):
+    def __repr__(self):
         return 'CT_' + self.name
 
 
+class BaseOT(int, Enum):
+    def __repr__(self):
+        return 'OT_' + self.name
+
+
 class BaseRT(int, Enum):
-    def __str__(self):
+    def __repr__(self):
         return 'RT_' + self.name
 
 
@@ -34,7 +34,7 @@ LN_2 = 0.693147180
 class Reducer:
     @staticmethod
     def _calc_decay(reducer_type, timestamp_delta):
-        if reducer_type == RT.SUM:
+        if reducer_type == RT.SUM or timestamp_delta == 0.0:
             return 1.0
         halflife = 0
         if reducer_type == RT.D1:
@@ -51,7 +51,9 @@ class Reducer:
 
     @staticmethod
     def value_at(reducer_type, x, x_timestamp, timestamp):
-        assert timestamp >= x_timestamp, "timestamp >= x_timestamp"
+        if timestamp == x_timestamp:
+            return x
+        assert timestamp >= x_timestamp, "timestamp < x_timestamp"
         return Reducer.reduce(reducer_type, x, x_timestamp, 0.0, timestamp)
 
     @staticmethod
@@ -63,8 +65,8 @@ class Reducer:
 
 class CounterKey:
     def __init__(self, object_type, counter_type, reducer_type):
-        assert isinstance(object_type, BaseOT)
-        assert isinstance(counter_type, BaseCT)
+        assert issubclass(type(object_type), BaseOT)
+        assert issubclass(type(counter_type), BaseCT)
         assert isinstance(reducer_type, RT)
         self.object_type = object_type
         self.counter_type = counter_type
@@ -72,6 +74,9 @@ class CounterKey:
 
     def as_tuple(self):
         return (self.object_type, self.counter_type, self.reducer_type)
+
+    def __repr__(self):
+        return str(self.as_tuple())
 
     def __hash__(self):
         return hash(self.as_tuple())
@@ -85,6 +90,13 @@ class CounterValue:
         self.value = value
         self.timestamp = timestamp
 
+    def __repr__(self):
+        return str(vars(self))
+
+    def reduce(self, reducer_type, timestamp):
+        self.value = self.get(reducer_type, timestamp)
+        self.timestamp = timestamp
+
     def get(self, reducer_type, timestamp):
         return Reducer.value_at(reducer_type, self.value, self.timestamp, timestamp)
 
@@ -94,16 +106,30 @@ class CounterValue:
 
 
 class CounterValues(defaultdict):
-    def __init__(self):
+    def __init__(self, *args):
         super(CounterValues, self).__init__(CounterValue)
+
+    def __repr__(self):
+        return str(dict(self))
+
+    def reduce(self, reducer_type, timestamp):
+        for value in self.values():
+            value.reduce(reducer_type, timestamp)
 
 
 class Counters:
     def __init__(self):
         self.data = defaultdict(CounterValues)
 
+    def __repr__(self):
+        return str(dict(self.data))
+
     def slice(self, object_type, counter_type, reducer_type):
         return self.data.get(CounterKey(object_type, counter_type, reducer_type), CounterValues())
+
+    def reduce(self, timestamp):
+        for key, values in self.data.items():
+            values.reduce(key.reducer_type, timestamp)
 
     def get(self, object_type, counter_type, reducer_type, object_id, timestamp, default=None):
         counter_key = CounterKey(object_type, counter_type, reducer_type)
@@ -149,10 +175,13 @@ def counter_cosine(
 
     def calc_mod(slice, reducer_type, timestamp):
         return sum(map(lambda x: math.pow(x.get(reducer_type, timestamp), 2), slice.values()))
-    mod_1 = calc_mod(slice_1,  reducer_type, timestamp)
-    mod_2 = calc_mod(slice_2,  reducer_type, timestamp)
 
-    if mod_1 == 0.0 or mod_2 == 0.0:
+    mod_1 = calc_mod(slice_1, reducer_type, timestamp)
+    if mod_1 == 0.0:
+        return 0.0
+
+    mod_2 = calc_mod(slice_2, reducer_type, timestamp)
+    if mod_2 == 0.0:
         return 0.0
 
     dot_prod = 0.0

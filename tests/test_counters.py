@@ -35,6 +35,14 @@ class TestCounters(unittest.TestCase):
         value = counters.get(OT.TEST, CT.TEST, RT.D30, '', 1+30*ONE_DAY_SECONDS)
         self.assertAlmostEqual(value, 2000, places=5)
 
+    def test_reduce(self):
+        counters = Counters()
+        counters.update(OT.TEST, CT.TEST, RT.D30, '', 1000, 1)
+        counters.reduce(1+30*ONE_DAY_SECONDS)
+        counter_value = counters.slice(OT.TEST, CT.TEST, RT.D30).get('')
+        self.assertAlmostEqual(counter_value.value, 500, places=5)
+        self.assertEqual(counter_value.timestamp, 1+30*ONE_DAY_SECONDS)
+
 
 class TestCountersOps(unittest.TestCase):
     def test_empty_cosine(self):
