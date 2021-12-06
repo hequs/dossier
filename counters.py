@@ -51,8 +51,6 @@ class Reducer:
 
     @staticmethod
     def value_at(reducer_type, x, x_timestamp, timestamp):
-        if timestamp == x_timestamp:
-            return x
         assert timestamp >= x_timestamp, "timestamp < x_timestamp"
         return Reducer.reduce(reducer_type, x, x_timestamp, 0.0, timestamp)
 
@@ -98,6 +96,8 @@ class CounterValue:
         self.timestamp = timestamp
 
     def get(self, reducer_type, timestamp):
+        if self.timestamp == timestamp:
+            return self.value
         return Reducer.value_at(reducer_type, self.value, self.timestamp, timestamp)
 
     def update(self, reducer_type, value, timestamp):
@@ -174,7 +174,7 @@ def counter_cosine(
     slice_2 = counters_2.slice(object_type_2, counter_type_2, reducer_type)
 
     def calc_mod(slice, reducer_type, timestamp):
-        return sum(map(lambda x: math.pow(x.get(reducer_type, timestamp), 2), slice.values()))
+        return sum(map(lambda x: x.get(reducer_type, timestamp) ** 2, slice.values()))
 
     mod_1 = calc_mod(slice_1, reducer_type, timestamp)
     if mod_1 == 0.0:
@@ -189,4 +189,4 @@ def counter_cosine(
         if counter_value_2 := slice_2.get(object_id):
             dot_prod += counter_value_1.get(reducer_type, timestamp) * counter_value_2.get(reducer_type, timestamp)
 
-    return dot_prod / (math.sqrt(mod_1) * math.sqrt(mod_2))
+    return dot_prod / (mod_1 * mod_2) ** 0.5
