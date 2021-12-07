@@ -1,7 +1,6 @@
-import math
-
 from collections import defaultdict
 from enum import Enum
+from math import exp
 
 
 class BaseCT(int, Enum):
@@ -47,7 +46,7 @@ class Reducer:
             halflife = 180 * ONE_DAY_SECONDS
         else:
             raise 'unsupported reduce'
-        return math.exp(-LN_2 * timestamp_delta / halflife)
+        return exp(-LN_2 * timestamp_delta / halflife)
 
     @staticmethod
     def value_at(reducer_type, x, x_timestamp, timestamp):
@@ -164,6 +163,7 @@ class Counters:
             )
 
 
+# see https://stackoverflow.com/questions/22381939/python-calculate-cosine-similarity-of-two-dicts-faster
 def counter_cosine(
     counters_1, object_type_1, counter_type_1,
     counters_2, object_type_2, counter_type_2,
