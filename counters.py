@@ -131,10 +131,8 @@ class Counters:
             values.reduce(key.reducer_type, timestamp)
 
     def get(self, object_type, counter_type, reducer_type, object_id, timestamp, default=None):
-        counter_key = CounterKey(object_type, counter_type, reducer_type)
-        if counter_value := self.slice(object_type, counter_type, reducer_type).get(object_id):
-            return counter_value.get(reducer_type, timestamp)
-        return default
+        counter_value = self.slice(object_type, counter_type, reducer_type).get(object_id)
+        return counter_value.get(reducer_type, timestamp) if counter_value else default
 
     def update(self, object_type, counter_type, reducer_type, object_id, value, timestamp):
         counter_key = CounterKey(object_type, counter_type, reducer_type)
@@ -186,7 +184,7 @@ def counter_cosine(
 
     dot_prod = 0.0
     for object_id, counter_value_1 in slice_1.items():
-        if counter_value_2 := slice_2.get(object_id):
-            dot_prod += counter_value_1.get(reducer_type, timestamp) * counter_value_2.get(reducer_type, timestamp)
+        if object_id in slice_2:
+            dot_prod += counter_value_1.get(reducer_type, timestamp) * slice_2.get(object_id).get(reducer_type, timestamp)
 
     return dot_prod / (mod_1 * mod_2) ** 0.5
