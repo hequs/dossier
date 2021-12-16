@@ -18,21 +18,21 @@ class TestCounters(unittest.TestCase):
     def test_single_update(self):
         counters = Counters()
         counters.update(OT.TEST, CT.TEST, RT.D30, '', 1000, 1)
-        value = counters.get(OT.TEST, CT.TEST, RT.D30, '', 1+30*ONE_DAY_SECONDS)
+        value = counters.value_at(OT.TEST, CT.TEST, RT.D30, '', 1+30*ONE_DAY_SECONDS)
         self.assertAlmostEqual(value, 500, places=5)
 
     def test_multiple_straight_update(self):
         counters = Counters()
         counters.update(OT.TEST, CT.TEST, RT.D30, '', 1000, 1)
         counters.update(OT.TEST, CT.TEST, RT.D30, '', 2000, 1)
-        value = counters.get(OT.TEST, CT.TEST, RT.D30, '', 1+30*ONE_DAY_SECONDS)
+        value = counters.value_at(OT.TEST, CT.TEST, RT.D30, '', 1+30*ONE_DAY_SECONDS)
         self.assertAlmostEqual(value, 1500, places=5)
 
     def test_multiple_reverse_update(self):
         counters = Counters()
         counters.update(OT.TEST, CT.TEST, RT.D30, '', 1000, 1+30*ONE_DAY_SECONDS)
         counters.update(OT.TEST, CT.TEST, RT.D30, '', 2000, 1)
-        value = counters.get(OT.TEST, CT.TEST, RT.D30, '', 1+30*ONE_DAY_SECONDS)
+        value = counters.value_at(OT.TEST, CT.TEST, RT.D30, '', 1+30*ONE_DAY_SECONDS)
         self.assertAlmostEqual(value, 2000, places=5)
 
     def test_reduce(self):

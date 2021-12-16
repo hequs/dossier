@@ -91,10 +91,10 @@ class CounterValue:
         return str(vars(self))
 
     def reduce(self, reducer_type, timestamp):
-        self.value = self.get(reducer_type, timestamp)
+        self.value = self.value_at(reducer_type, timestamp)
         self.timestamp = timestamp
 
-    def get(self, reducer_type, timestamp):
+    def value_at(self, reducer_type, timestamp):
         if self.timestamp == timestamp:
             return self.value
         return Reducer.value_at(reducer_type, self.value, self.timestamp, timestamp)
@@ -130,9 +130,9 @@ class Counters:
         for key, values in self.data.items():
             values.reduce(key.reducer_type, timestamp)
 
-    def get(self, object_type, counter_type, reducer_type, object_id, timestamp, default=None):
+    def value_at(self, object_type, counter_type, reducer_type, object_id, timestamp, default=None):
         counter_value = self.slice(object_type, counter_type, reducer_type).get(object_id)
-        return counter_value.get(reducer_type, timestamp) if counter_value else default
+        return counter_value.value_at(reducer_type, timestamp) if counter_value else default
 
     def update(self, object_type, counter_type, reducer_type, object_id, value, timestamp):
         counter_key = CounterKey(object_type, counter_type, reducer_type)
@@ -156,7 +156,7 @@ class Counters:
                 to_counter_type,
                 to_reducer_type,
                 object_id,
-                counter.get(timestamp, reducer_type) * weight,
+                counter.value_at(reducer_type, timestamp) * weight,
                 timestamp
             )
 
@@ -172,7 +172,7 @@ def counter_cosine(
     slice_2 = counters_2.slice(object_type_2, counter_type_2, reducer_type)
 
     def calc_mod(slice, reducer_type, timestamp):
-        return sum(map(lambda x: x.get(reducer_type, timestamp) ** 2, slice.values()))
+        return sum(map(lambda x: x.value_at(reducer_type, timestamp) ** 2, slice.values()))
 
     mod_1 = calc_mod(slice_1, reducer_type, timestamp)
     if mod_1 == 0.0:
@@ -185,6 +185,6 @@ def counter_cosine(
     dot_prod = 0.0
     for object_id, counter_value_1 in slice_1.items():
         if object_id in slice_2:
-            dot_prod += counter_value_1.get(reducer_type, timestamp) * slice_2.get(object_id).get(reducer_type, timestamp)
+            dot_prod += counter_value_1.value_at(reducer_type, timestamp) * slice_2.get(object_id).value_at(reducer_type, timestamp)
 
     return dot_prod / (mod_1 * mod_2) ** 0.5
