@@ -30,34 +30,32 @@ ONE_DAY_SECONDS = 86400
 LN_2 = 0.693147180
 
 
-class Reducer:
-    @staticmethod
-    def _calc_decay(reducer_type, timestamp_delta):
-        if reducer_type == RT.SUM or timestamp_delta == 0.0:
-            return 1.0
-        halflife = 0
-        if reducer_type == RT.D1:
-            halflife = 1 * ONE_DAY_SECONDS
-        elif reducer_type == RT.D7:
-            halflife = 7 * ONE_DAY_SECONDS
-        elif reducer_type == RT.D30:
-            halflife = 30 * ONE_DAY_SECONDS
-        elif reducer_type == RT.D180:
-            halflife = 180 * ONE_DAY_SECONDS
-        else:
-            raise 'unsupported reduce'
-        return exp(-LN_2 * timestamp_delta / halflife)
+def _calc_decay(reducer_type, timestamp_delta):
+    if reducer_type == RT.SUM or timestamp_delta == 0.0:
+        return 1.0
+    halflife = 0
+    if reducer_type == RT.D1:
+        halflife = 1 * ONE_DAY_SECONDS
+    elif reducer_type == RT.D7:
+        halflife = 7 * ONE_DAY_SECONDS
+    elif reducer_type == RT.D30:
+        halflife = 30 * ONE_DAY_SECONDS
+    elif reducer_type == RT.D180:
+        halflife = 180 * ONE_DAY_SECONDS
+    else:
+        raise 'unsupported reduce'
+    return exp(-LN_2 * timestamp_delta / halflife)
 
-    @staticmethod
-    def value_at(reducer_type, x, x_timestamp, timestamp):
-        assert timestamp >= x_timestamp, "timestamp < x_timestamp"
-        return Reducer.reduce(reducer_type, x, x_timestamp, 0.0, timestamp)
 
-    @staticmethod
-    def reduce(reducer_type, x, x_timestamp, y, y_timestamp):
-        if x_timestamp > y_timestamp:
-            x, y, x_timestamp, y_timestamp = y, x, y_timestamp, x_timestamp
-        return x * Reducer._calc_decay(reducer_type, float(y_timestamp - x_timestamp)) + y
+def _value_at(reducer_type, x, x_timestamp, timestamp):
+    assert timestamp >= x_timestamp, "timestamp < x_timestamp"
+    return _reduce(reducer_type, x, x_timestamp, 0.0, timestamp)
+
+
+def _reduce(reducer_type, x, x_timestamp, y, y_timestamp):
+    if x_timestamp > y_timestamp:
+        x, y, x_timestamp, y_timestamp = y, x, y_timestamp, x_timestamp
+    return x * _calc_decay(reducer_type, float(y_timestamp - x_timestamp)) + y
 
 
 class CounterKey:
@@ -97,10 +95,10 @@ class CounterValue:
     def value_at(self, reducer_type, timestamp):
         if self.timestamp == timestamp:
             return self.value
-        return Reducer.value_at(reducer_type, self.value, self.timestamp, timestamp)
+        return _value_at(reducer_type, self.value, self.timestamp, timestamp)
 
     def update(self, reducer_type, value, timestamp):
-        self.value = Reducer.reduce(reducer_type, self.value, self.timestamp, value, timestamp)
+        self.value = _reduce(reducer_type, self.value, self.timestamp, value, timestamp)
         self.timestamp = max(self.timestamp, timestamp)
 
 
