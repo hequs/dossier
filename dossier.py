@@ -6,6 +6,7 @@ class Dossier:
         self.object_type = object_type
         self.object_id = object_id
         self.counters = Counters()
+        self.additional_data = dict()
 
     def __repr__(self):
         return str(vars(self))
