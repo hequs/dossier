@@ -15,61 +15,59 @@ class OT(BaseOT):
 
 
 class TestCounters(unittest.TestCase):
-    def test_single_update(self):
+    def test_value(self):
+        counters = Counters()
+        counters.update(OT.TEST, CT.TEST, RT.D30, '', 1000, 1)
+        value = counters.value(OT.TEST, CT.TEST, RT.D30, '')
+        self.assertAlmostEqual(value, 1000, places=5)
+        
+    def test_value_at(self):
         counters = Counters()
         counters.update(OT.TEST, CT.TEST, RT.D30, '', 1000, 1)
         value = counters.value_at(OT.TEST, CT.TEST, RT.D30, '', 1+30*ONE_DAY_SECONDS)
         self.assertAlmostEqual(value, 500, places=5)
-
-    def test_multiple_straight_update(self):
+        
+    def test_update_straight(self):
         counters = Counters()
         counters.update(OT.TEST, CT.TEST, RT.D30, '', 1000, 1)
         counters.update(OT.TEST, CT.TEST, RT.D30, '', 2000, 1)
-        value = counters.value_at(OT.TEST, CT.TEST, RT.D30, '', 1+30*ONE_DAY_SECONDS)
-        self.assertAlmostEqual(value, 1500, places=5)
+        value = counters.value(OT.TEST, CT.TEST, RT.D30, '')
+        self.assertAlmostEqual(value, 3000, places=5)
 
-    def test_multiple_reverse_update(self):
+    def test_update_reverse(self):
         counters = Counters()
         counters.update(OT.TEST, CT.TEST, RT.D30, '', 1000, 1+30*ONE_DAY_SECONDS)
         counters.update(OT.TEST, CT.TEST, RT.D30, '', 2000, 1)
-        value = counters.value_at(OT.TEST, CT.TEST, RT.D30, '', 1+30*ONE_DAY_SECONDS)
+        value = counters.value(OT.TEST, CT.TEST, RT.D30, '')
         self.assertAlmostEqual(value, 2000, places=5)
-
+        
     def test_reduce(self):
         counters = Counters()
         counters.update(OT.TEST, CT.TEST, RT.D30, '', 1000, 1)
         counters.reduce(1+30*ONE_DAY_SECONDS)
-        counter_value = counters.slice(OT.TEST, CT.TEST, RT.D30).get('')
-        self.assertAlmostEqual(counter_value.value, 500, places=5)
-        self.assertEqual(counter_value.timestamp, 1+30*ONE_DAY_SECONDS)
+        value = counters.value(OT.TEST, CT.TEST, RT.D30, '')
+        self.assertAlmostEqual(value, 500, places=5)
 
 
 class TestCountersOps(unittest.TestCase):
     def test_empty_cosine(self):
         counters_1 = Counters()
         counters_1.update(OT.TEST, CT.TEST, RT.D30, 'orange', 1, 1)
+        counters_1.freeze()
         counters_2 = Counters()
         counters_2.update(OT.TEST, CT.TEST, RT.D30, 'cherry', 1, 1)
-        value = counter_cosine(counters_1, OT.ORANGE, CT.TEST, counters_2, OT.CHERRY, CT.TEST, RT.D30, 1)
+        counters_2.freeze()
+        value = counter_cosine(counters_1, OT.ORANGE, CT.TEST, counters_2, OT.CHERRY, CT.TEST, RT.D30)
         self.assertEqual(value, 0)
 
     def test_cosine(self):
         counters_1 = Counters()
         counters_1.update(OT.TEST, CT.TEST, RT.D30, 'apple', 1, 1)
         counters_1.update(OT.TEST, CT.TEST, RT.D30, 'orange', 1, 1)
+        counters_1.freeze()
         counters_2 = Counters()
         counters_2.update(OT.TEST, CT.TEST, RT.D30, 'apple', 1, 1)
         counters_2.update(OT.TEST, CT.TEST, RT.D30, 'cherry', 1, 1)
-        value = counter_cosine(counters_1, OT.TEST, CT.TEST, counters_2, OT.TEST, CT.TEST, RT.D30, 1)
-        self.assertAlmostEqual(value, 0.5)
-
-    def test_cosine_fails(self):
-        counters_1 = Counters()
-        counters_1.update(OT.TEST, CT.TEST, RT.D30, 'apple', 1, 3)
-        counters_1.update(OT.TEST, CT.TEST, RT.D30, 'orange', 1, 2)
-        counters_2 = Counters()
-        counters_2.update(OT.TEST, CT.TEST, RT.D30, 'apple', 1, 4)
-        counters_2.update(OT.TEST, CT.TEST, RT.D30, 'cherry', 1, 5)
-        def callable():
-            counter_cosine(counters_1, OT.TEST, CT.TEST, counters_2, OT.TEST, CT.TEST, RT.D30, 1)
-        self.assertRaises(AssertionError, callable)
+        counters_2.freeze()
+        value = counter_cosine(counters_1, OT.TEST, CT.TEST, counters_2, OT.TEST, CT.TEST, RT.D30)
+        self.assertAlmostEqual(value, 0.5, places=5)

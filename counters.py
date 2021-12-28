@@ -1,6 +1,12 @@
+from array import array
+from bisect import bisect_left
 from collections import defaultdict
 from enum import Enum
 from math import exp
+from numpy.linalg import norm
+
+import numpy as np
+
 
 
 class BaseCT(int, Enum):
@@ -102,27 +108,47 @@ class CounterValue:
         self.timestamp = max(self.timestamp, timestamp)
 
 
-class CounterValues(defaultdict):
-    def __init__(self, *args):
-        super(CounterValues, self).__init__(CounterValue)
+class CounterValues:
+    def __init__(self):
+        self.object_ids = list()
+        self.values = array('f')
+        self.timestamps = array('i')
 
     def __repr__(self):
-        return str(dict(self))
+        return str(dict(zip(self.object_ids, zip(self.values, self.timestamps))))
 
+    # converts inner data to np.array type for further efficient processing
+    def freeze(self):
+        self.object_ids = np.array(self.object_ids)
+        self.values = np.array(self.values)
+        self.timestamps = np.array(self.timestamps)
+        
     def reduce(self, reducer_type, timestamp):
-        for value in self.values():
-            value.reduce(reducer_type, timestamp)
+        for index in range(len(self.object_ids)):
+            self.values[index] = _value_at(reducer_type, self.values[index], self.timestamps[index], timestamp)
+            self.timestamps[index] = timestamp
+            
+    def update(self, object_id, reducer_type, value, timestamp):
+        index = bisect_left(self.object_ids, object_id)
+        if index < len(self.object_ids) and self.object_ids[index] == object_id:
+            self.values[index] = _reduce(reducer_type, self.values[index], self.timestamps[index], value, timestamp)
+            self.timestamps[index] = timestamp
+        else:
+            self.object_ids.insert(index, object_id)
+            self.values.insert(index, value)
+            self.timestamps.insert(index, timestamp)
 
     def value(self, object_id, default=None):
-        counter_value = self.get(object_id)
-        return counter_value.value if counter_value else default
+        index = bisect_left(self.object_ids, object_id)
+        if index < len(self.object_ids) and self.object_ids[index] == object_id:
+            return self.values[index]
+        return default
     
     def value_at(self, object_id, reducer_type, timestamp, default=None):
-        counter_value = self.get(object_id)
-        return counter_value.value_at(reducer_type, timestamp) if counter_value else default
-
-    def update(self, object_id, reducer_type, value, timestamp):
-        counter_value = self[object_id].update(reducer_type, value, timestamp)
+        index = bisect_left(self.object_ids, object_id)
+        if index < len(self.object_ids) and self.object_ids[index] == object_id:
+            return _value_at(reducer_type, self.values[index], self.timestamps[index], timestamp)
+        return default
 
 
 class Counters:
@@ -134,6 +160,10 @@ class Counters:
 
     def slice(self, object_type, counter_type, reducer_type):
         return self.data.get(CounterKey(object_type, counter_type, reducer_type), CounterValues())
+    
+    def freeze(self):
+        for values in self.data.values():
+            values.freeze()
     
     def reduce(self, timestamp):
         for key, values in self.data.items():
@@ -152,30 +182,24 @@ class Counters:
         counter_values.update(object_id, reducer_type, value, timestamp)
 
 
-# see https://stackoverflow.com/questions/22381939/python-calculate-cosine-similarity-of-two-dicts-faster
+# REQUIRES input counters to be reduced and frozen beforehand
 def counter_cosine(
     counters_1, object_type_1, counter_type_1,
     counters_2, object_type_2, counter_type_2,
-    reducer_type,
-    timestamp
+    reducer_type
 ):
-    slice_1 = counters_1.slice(object_type_1, counter_type_1, reducer_type)
-    slice_2 = counters_2.slice(object_type_2, counter_type_2, reducer_type)
-
-    def calc_mod(slice, reducer_type, timestamp):
-        return sum(map(lambda x: x.value_at(reducer_type, timestamp) ** 2, slice.values()))
-
-    mod_1 = calc_mod(slice_1, reducer_type, timestamp)
+    values_1 = counters_1.slice(object_type_1, counter_type_1, reducer_type)
+    values_2 = counters_2.slice(object_type_2, counter_type_2, reducer_type)
+    
+    mod_1 = norm(values_1.values)
     if mod_1 == 0.0:
         return 0.0
 
-    mod_2 = calc_mod(slice_2, reducer_type, timestamp)
+    mod_2 = norm(values_2.values)
     if mod_2 == 0.0:
         return 0.0
+    
+    _, i_1, i_2 = np.intersect1d(values_1.object_ids, values_2.object_ids, assume_unique=True, return_indices=True)
+    dot_prod = np.sum(values_1.values[i_1] * values_2.values[i_2])
 
-    dot_prod = 0.0
-    for object_id, counter_value_1 in slice_1.items():
-        if object_id in slice_2:
-            dot_prod += counter_value_1.value_at(reducer_type, timestamp) * slice_2.get(object_id).value_at(reducer_type, timestamp)
-
-    return dot_prod / (mod_1 * mod_2) ** 0.5
+    return dot_prod / (mod_1 * mod_2)
