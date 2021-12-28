@@ -136,28 +136,6 @@ class Counters:
         counter_key = CounterKey(object_type, counter_type, reducer_type)
         self.data[counter_key][object_id].update(reducer_type, value, timestamp)
 
-    def update_from(
-        self,
-        other_counters,
-        object_type,
-        counter_type,
-        reducer_type,
-        to_counter_type,
-        to_reducer_type,
-        timestamp,
-        weight=1.0
-    ):
-        assert reducer_type == RT.SUM, f'update_from only {RT.SUM} counters makes sense'
-        for object_id, counter in other_counters.slice(object_type, counter_type, reducer_type).items():
-            self.update(
-                object_type,
-                to_counter_type,
-                to_reducer_type,
-                object_id,
-                counter.value_at(reducer_type, timestamp) * weight,
-                timestamp
-            )
-
 
 # see https://stackoverflow.com/questions/22381939/python-calculate-cosine-similarity-of-two-dicts-faster
 def counter_cosine(
