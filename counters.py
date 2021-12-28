@@ -113,6 +113,17 @@ class CounterValues(defaultdict):
         for value in self.values():
             value.reduce(reducer_type, timestamp)
 
+    def value(self, object_id, default=None):
+        counter_value = self.get(object_id)
+        return counter_value.value if counter_value else default
+    
+    def value_at(self, object_id, reducer_type, timestamp, default=None):
+        counter_value = self.get(object_id)
+        return counter_value.value_at(reducer_type, timestamp) if counter_value else default
+
+    def update(self, object_id, reducer_type, value, timestamp):
+        counter_value = self[object_id].update(reducer_type, value, timestamp)
+
 
 class Counters:
     def __init__(self):
@@ -123,18 +134,22 @@ class Counters:
 
     def slice(self, object_type, counter_type, reducer_type):
         return self.data.get(CounterKey(object_type, counter_type, reducer_type), CounterValues())
-
+    
     def reduce(self, timestamp):
         for key, values in self.data.items():
             values.reduce(key.reducer_type, timestamp)
 
+    def value(self, object_type, counter_type, reducer_type, object_id, default=None):
+        counter_values = self.data.get(CounterKey(object_type, counter_type, reducer_type))
+        return counter_values.value(object_id, default) if counter_values else default
+    
     def value_at(self, object_type, counter_type, reducer_type, object_id, timestamp, default=None):
-        counter_value = self.slice(object_type, counter_type, reducer_type).get(object_id)
-        return counter_value.value_at(reducer_type, timestamp) if counter_value else default
+        counter_values = self.data.get(CounterKey(object_type, counter_type, reducer_type))
+        return counter_values.value_at(object_id, reducer_type, timestamp, default) if counter_values else default
 
     def update(self, object_type, counter_type, reducer_type, object_id, value, timestamp):
-        counter_key = CounterKey(object_type, counter_type, reducer_type)
-        self.data[counter_key][object_id].update(reducer_type, value, timestamp)
+        counter_values = self.data[CounterKey(object_type, counter_type, reducer_type)]
+        counter_values.update(object_id, reducer_type, value, timestamp)
 
 
 # see https://stackoverflow.com/questions/22381939/python-calculate-cosine-similarity-of-two-dicts-faster
