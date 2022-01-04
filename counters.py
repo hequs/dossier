@@ -86,28 +86,6 @@ class CounterKey:
         return self.as_tuple() == other.as_tuple()
 
 
-class CounterValue:
-    def __init__(self, value=0.0, timestamp=0):
-        self.value = value
-        self.timestamp = timestamp
-
-    def __repr__(self):
-        return str(vars(self))
-
-    def reduce(self, reducer_type, timestamp):
-        self.value = self.value_at(reducer_type, timestamp)
-        self.timestamp = timestamp
-
-    def value_at(self, reducer_type, timestamp):
-        if self.timestamp == timestamp:
-            return self.value
-        return _value_at(reducer_type, self.value, self.timestamp, timestamp)
-
-    def update(self, reducer_type, value, timestamp):
-        self.value = _reduce(reducer_type, self.value, self.timestamp, value, timestamp)
-        self.timestamp = max(self.timestamp, timestamp)
-
-
 class CounterValues:
     def __init__(self):
         self.object_ids = list()
