@@ -100,12 +100,12 @@ class CounterValues:
         self.object_ids = np.array(self.object_ids)
         self.values = np.array(self.values)
         self.timestamps = np.array(self.timestamps)
-        
+
     def reduce(self, reducer_type, timestamp):
         for index in range(len(self.object_ids)):
             self.values[index] = _value_at(reducer_type, self.values[index], self.timestamps[index], timestamp)
             self.timestamps[index] = timestamp
-            
+
     def update(self, object_id, reducer_type, value, timestamp):
         index = bisect_left(self.object_ids, object_id)
         if index < len(self.object_ids) and self.object_ids[index] == object_id:
@@ -121,7 +121,7 @@ class CounterValues:
         if index < len(self.object_ids) and self.object_ids[index] == object_id:
             return self.values[index]
         return default
-    
+
     def value_at(self, object_id, reducer_type, timestamp, default=None):
         index = bisect_left(self.object_ids, object_id)
         if index < len(self.object_ids) and self.object_ids[index] == object_id:
@@ -138,11 +138,11 @@ class Counters:
 
     def slice(self, object_type, counter_type, reducer_type):
         return self.data.get(CounterKey(object_type, counter_type, reducer_type), CounterValues())
-    
+
     def freeze(self):
         for values in self.data.values():
             values.freeze()
-    
+
     def reduce(self, timestamp):
         for key, values in self.data.items():
             values.reduce(key.reducer_type, timestamp)
@@ -150,7 +150,7 @@ class Counters:
     def value(self, object_type, counter_type, reducer_type, object_id, default=None):
         counter_values = self.data.get(CounterKey(object_type, counter_type, reducer_type))
         return counter_values.value(object_id, default) if counter_values else default
-    
+
     def value_at(self, object_type, counter_type, reducer_type, object_id, timestamp, default=None):
         counter_values = self.data.get(CounterKey(object_type, counter_type, reducer_type))
         return counter_values.value_at(object_id, reducer_type, timestamp, default) if counter_values else default
@@ -168,7 +168,7 @@ def counter_cosine(
 ):
     values_1 = counters_1.slice(object_type_1, counter_type_1, reducer_type)
     values_2 = counters_2.slice(object_type_2, counter_type_2, reducer_type)
-    
+
     mod_1 = norm(values_1.values)
     if mod_1 == 0.0:
         return 0.0
@@ -176,7 +176,7 @@ def counter_cosine(
     mod_2 = norm(values_2.values)
     if mod_2 == 0.0:
         return 0.0
-    
+
     _, i_1, i_2 = np.intersect1d(values_1.object_ids, values_2.object_ids, assume_unique=True, return_indices=True)
     dot_prod = np.sum(values_1.values[i_1] * values_2.values[i_2])
 
