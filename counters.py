@@ -1,6 +1,5 @@
 from collections import defaultdict
 from enum import Enum
-from math import exp
 
 
 class BaseCT(int, Enum):
@@ -26,8 +25,7 @@ class RT(BaseRT):
     D180 = 4
 
 
-ONE_DAY_SECONDS = 86400
-LN_2 = 0.693147180
+ONE_DAY_SECONDS = 86400.0
 
 
 def _calc_decay(reducer_type, timestamp_delta):
@@ -44,7 +42,7 @@ def _calc_decay(reducer_type, timestamp_delta):
         halflife = 180 * ONE_DAY_SECONDS
     else:
         raise 'unsupported reduce'
-    return exp(-LN_2 * timestamp_delta / halflife)
+    return 2 ** (-timestamp_delta / halflife) # exp(-0.693147180 * timestamp_delta / halflife)
 
 
 def _value_at(reducer_type, x, x_timestamp, timestamp):
