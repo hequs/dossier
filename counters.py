@@ -110,7 +110,7 @@ class CounterValues:
         index = bisect_left(self.object_ids, object_id)
         if index < len(self.object_ids) and self.object_ids[index] == object_id:
             self.values[index] = _reduce(reducer_type, self.values[index], self.timestamps[index], value, timestamp)
-            self.timestamps[index] = timestamp
+            self.timestamps[index] = max(timestamp, self.timestamps[index])
         else:
             self.object_ids.insert(index, object_id)
             self.values.insert(index, value)
