@@ -55,6 +55,8 @@ def _calc_decay(reducer_type, timestamp_delta):
 
 def _value_at(reducer_type, x, x_timestamp, timestamp):
     assert timestamp >= x_timestamp, "timestamp < x_timestamp"
+    if x_timestamp == timestamp:
+        return x
     return _reduce(reducer_type, x, x_timestamp, 0.0, timestamp)
 
 
