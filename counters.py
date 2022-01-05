@@ -57,6 +57,8 @@ def _reduce(reducer_type, x, x_timestamp, y, y_timestamp):
 
 
 class CounterKey:
+    __slots__ = ("object_type", "counter_type", "reducer_type")
+
     def __init__(self, object_type, counter_type, reducer_type):
         assert issubclass(type(object_type), BaseOT)
         assert issubclass(type(counter_type), BaseCT)
@@ -79,12 +81,14 @@ class CounterKey:
 
 
 class CounterValue:
+    __slots__ = ("value", "timestamp")
+
     def __init__(self, value=0.0, timestamp=0):
         self.value = value
         self.timestamp = timestamp
 
     def __repr__(self):
-        return str(vars(self))
+        return str((self.value, self.timestamp))
 
     def reduce(self, reducer_type, timestamp):
         self.value = self.value_at(reducer_type, timestamp)
