@@ -42,7 +42,7 @@ def _calc_decay(reducer_type, timestamp_delta):
         halflife = 180 * ONE_DAY_SECONDS
     else:
         raise 'unsupported reduce'
-    return 2 ** (-timestamp_delta / halflife) # exp(-0.693147180 * timestamp_delta / halflife)
+    return 2 ** (-timestamp_delta / halflife)  # exp(-0.693147180 * timestamp_delta / halflife)
 
 
 def _value_at(reducer_type, x, x_timestamp, timestamp):
@@ -114,7 +114,7 @@ class CounterValues(defaultdict):
     def value(self, object_id, default=None):
         counter_value = self.get(object_id)
         return counter_value.value if counter_value else default
-    
+
     def value_at(self, object_id, reducer_type, timestamp, default=None):
         counter_value = self.get(object_id)
         return counter_value.value_at(reducer_type, timestamp) if counter_value else default
@@ -132,7 +132,7 @@ class Counters:
 
     def slice(self, object_type, counter_type, reducer_type):
         return self.data.get(CounterKey(object_type, counter_type, reducer_type), CounterValues())
-    
+
     def reduce(self, timestamp):
         for key, values in self.data.items():
             values.reduce(key.reducer_type, timestamp)
@@ -140,7 +140,7 @@ class Counters:
     def value(self, object_type, counter_type, reducer_type, object_id, default=None):
         counter_values = self.data.get(CounterKey(object_type, counter_type, reducer_type))
         return counter_values.value(object_id, default) if counter_values else default
-    
+
     def value_at(self, object_type, counter_type, reducer_type, object_id, timestamp, default=None):
         counter_values = self.data.get(CounterKey(object_type, counter_type, reducer_type))
         return counter_values.value_at(object_id, reducer_type, timestamp, default) if counter_values else default

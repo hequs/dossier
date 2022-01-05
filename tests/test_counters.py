@@ -69,6 +69,7 @@ class TestCountersOps(unittest.TestCase):
         counters_2 = Counters()
         counters_2.update(OT.TEST, CT.TEST, RT.D30, 'apple', 1, 4)
         counters_2.update(OT.TEST, CT.TEST, RT.D30, 'cherry', 1, 5)
+
         def callable():
             counter_cosine(counters_1, OT.TEST, CT.TEST, counters_2, OT.TEST, CT.TEST, RT.D30, 1)
         self.assertRaises(AssertionError, callable)
