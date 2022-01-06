@@ -127,30 +127,30 @@ class CounterValues(defaultdict):
         counter_value = self[object_id].update(reducer_type, value, timestamp)
 
 
-class Counters:
-    def __init__(self):
-        self.data = defaultdict(CounterValues)
+class Counters(defaultdict):
+    def __init__(self, *args):
+        super(Counters, self).__init__(CounterValues)
 
     def __repr__(self):
-        return str(dict(self.data))
+        return str(dict(self))
 
     def slice(self, object_type, counter_type, reducer_type):
-        return self.data.get(CounterKey(object_type, counter_type, reducer_type), CounterValues())
+        return self.get(CounterKey(object_type, counter_type, reducer_type), CounterValues())
 
     def reduce(self, timestamp):
-        for key, values in self.data.items():
+        for key, values in self.items():
             values.reduce(key.reducer_type, timestamp)
 
     def value(self, object_type, counter_type, reducer_type, object_id, default=None):
-        counter_values = self.data.get(CounterKey(object_type, counter_type, reducer_type))
+        counter_values = self.get(CounterKey(object_type, counter_type, reducer_type))
         return counter_values.value(object_id, default) if counter_values else default
 
     def value_at(self, object_type, counter_type, reducer_type, object_id, timestamp, default=None):
-        counter_values = self.data.get(CounterKey(object_type, counter_type, reducer_type))
+        counter_values = self.get(CounterKey(object_type, counter_type, reducer_type))
         return counter_values.value_at(object_id, reducer_type, timestamp, default) if counter_values else default
 
     def update(self, object_type, counter_type, reducer_type, object_id, value, timestamp):
-        counter_values = self.data[CounterKey(object_type, counter_type, reducer_type)]
+        counter_values = self[CounterKey(object_type, counter_type, reducer_type)]
         counter_values.update(object_id, reducer_type, value, timestamp)
 
 
