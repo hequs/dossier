@@ -163,6 +163,8 @@ def counter_cosine(
 ):
     slice_1 = counters_1.slice(object_type_1, counter_type_1, reducer_type)
     slice_2 = counters_2.slice(object_type_2, counter_type_2, reducer_type)
+    if len(slice_1) > len(slice_2):
+        slice_1, slice_2 = slice_2, slice_1
 
     def calc_mod(slice, reducer_type, timestamp):
         return sum(map(lambda x: x.value_at(reducer_type, timestamp) ** 2, slice.values()))
@@ -179,5 +181,33 @@ def counter_cosine(
     for object_id, counter_value_1 in slice_1.items():
         if object_id in slice_2:
             dot_prod += counter_value_1.value_at(reducer_type, timestamp) * slice_2.get(object_id).value_at(reducer_type, timestamp)
+
+    return dot_prod / (mod_1 * mod_2) ** 0.5
+
+
+def counter_cosine_reduced(
+    counters_1, object_type_1, counter_type_1,
+    counters_2, object_type_2, counter_type_2,
+    reducer_type
+):
+    slice_1 = counters_1.slice(object_type_1, counter_type_1, reducer_type)
+    slice_2 = counters_2.slice(object_type_2, counter_type_2, reducer_type)
+    if len(slice_1) > len(slice_2):
+        slice_1, slice_2 = slice_2, slice_1
+
+    calc_mod = lambda s: sum(map(lambda x: x.value ** 2, s.values()))
+
+    mod_1 = calc_mod(slice_1)
+    if mod_1 == 0.0:
+        return 0.0
+
+    mod_2 = calc_mod(slice_2)
+    if mod_2 == 0.0:
+        return 0.0
+
+    dot_prod = 0.0
+    for object_id, counter_value_1 in slice_1.items():
+        if object_id in slice_2:
+            dot_prod += counter_value_1.value * slice_2.value(object_id)
 
     return dot_prod / (mod_1 * mod_2) ** 0.5
