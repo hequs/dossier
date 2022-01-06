@@ -155,7 +155,7 @@ class Counters(defaultdict):
 
 
 # see https://stackoverflow.com/questions/22381939/python-calculate-cosine-similarity-of-two-dicts-faster
-def counter_cosine(
+def counter_cosine_at(
     counters_1, object_type_1, counter_type_1,
     counters_2, object_type_2, counter_type_2,
     reducer_type,
@@ -185,7 +185,7 @@ def counter_cosine(
     return dot_prod / (mod_1 * mod_2) ** 0.5
 
 
-def counter_cosine_reduced(
+def counter_cosine(
     counters_1, object_type_1, counter_type_1,
     counters_2, object_type_2, counter_type_2,
     reducer_type
