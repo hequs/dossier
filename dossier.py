@@ -1,3 +1,4 @@
+from copy import deepcopy
 from counters import Counters, BaseCT, BaseOT, RT, counter_cosine
 
 
@@ -13,6 +14,14 @@ class Dossier:
 
     def merge(self, other):
         self.counters.merge(other.counters)
+
+    @staticmethod
+    def merge_all(dossiers):
+        dossiers = iter(dossiers)
+        dossier = deepcopy(next(dossiers))
+        for next_dossier in dossiers:
+            dossier.merge(next_dossier)
+        return dossier
 
     def reduce(self, timestamp):
         self.counters.reduce(timestamp)
