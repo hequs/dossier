@@ -12,6 +12,7 @@ class Dossier:
         return str(vars(self))
 
     def merge(self, other):
+        assert (self.object_type, self.object_id) == (other.object_type, other.object_id), 'unequal dossier ids'
         self.counters.merge(other)
 
     def reduce(self, timestamp):
