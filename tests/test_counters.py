@@ -36,6 +36,18 @@ class TestCounters(unittest.TestCase):
         self.assertAlmostEqual(3000, counters.value(OT.TEST, CT.TEST, RT.D30, ''), places=5)
         self.assertAlmostEqual(1500, counters.value_at(OT.TEST, CT.TEST, RT.D30, '', _days_to_seconds(90)), places=5)
 
+    def test_merge(self):
+        counters_1 = Counters()
+        counters_1.update(OT.TEST, CT.TEST, RT.D30, 'apple', 2000, _days_to_seconds(0))
+        counters_1.update(OT.TEST, CT.TEST, RT.D30, 'orange', 2000, _days_to_seconds(0))
+        counters_2 = Counters()
+        counters_1.update(OT.TEST, CT.TEST, RT.D30, 'apple', 1000, _days_to_seconds(30))
+        counters_2.update(OT.TEST, CT.TEST, RT.D30, 'cherry', 1000, _days_to_seconds(30))
+        counters_1.merge(counters_2)
+        self.assertAlmostEqual(2000, counters_1.value(OT.TEST, CT.TEST, RT.D30, 'apple'), places=5)
+        self.assertAlmostEqual(2000, counters_1.value(OT.TEST, CT.TEST, RT.D30, 'orange'), places=5)
+        self.assertAlmostEqual(1000, counters_1.value(OT.TEST, CT.TEST, RT.D30, 'cherry'), places=5)
+
     def test_reduce(self):
         counters = Counters()
         counters.update(OT.TEST, CT.TEST, RT.D30, '', 1000, _days_to_seconds(0))

@@ -123,6 +123,10 @@ class CounterValues(defaultdict):
         counter_value = self.get(object_id)
         return counter_value.value_at(reducer_type, timestamp) if counter_value else default
 
+    def merge(self, other, reducer_type):
+        for object_id, counter_value in other.items():
+            self.update(object_id, reducer_type, counter_value.value, counter_value.timestamp)
+
     def update(self, object_id, reducer_type, value, timestamp):
         counter_value = self[object_id].update(reducer_type, value, timestamp)
 
@@ -148,6 +152,10 @@ class Counters(defaultdict):
     def value_at(self, object_type, counter_type, reducer_type, object_id, timestamp, default=None):
         counter_values = self.get(CounterKey(object_type, counter_type, reducer_type))
         return counter_values.value_at(object_id, reducer_type, timestamp, default) if counter_values else default
+
+    def merge(self, other):
+        for key, values in other.items():
+            self[key].merge(values, key.reducer_type)
 
     def update(self, object_type, counter_type, reducer_type, object_id, value, timestamp):
         counter_values = self[CounterKey(object_type, counter_type, reducer_type)]

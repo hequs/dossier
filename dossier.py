@@ -11,5 +11,8 @@ class Dossier:
     def __repr__(self):
         return str(vars(self))
 
+    def merge(self, other):
+        self.counters.merge(other)
+
     def reduce(self, timestamp):
         self.counters.reduce(timestamp)
