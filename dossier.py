@@ -12,7 +12,7 @@ class Dossier:
         return str(vars(self))
 
     def merge(self, other):
-        self.counters.merge(other)
+        self.counters.merge(other.counters)
 
     def reduce(self, timestamp):
         self.counters.reduce(timestamp)
